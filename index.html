@@ -3,85 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nepal Trivia Game</title>
+<title>Nepali Flappy Bird</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px; }
-  #game-container { background: white; padding: 20px; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-  .question { font-size: 1.2em; margin-bottom: 15px; }
-  .choices { list-style: none; padding: 0; }
-  .choices li { margin: 8px 0; }
-  button { padding: 10px 15px; font-size: 1em; }
-  #score { font-weight: bold; margin-top: 20px; }
+  body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #87CEEB;
+    font-family: sans-serif;
+  }
+  canvas {
+    background: #a0d8ef;
+    border: 2px solid #333;
+  }
+  #score {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-size: 24px;
+    text-shadow: 1px 1px 2px black;
+  }
+  #gameOver {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 32px;
+    text-align: center;
+    text-shadow: 1px 1px 2px black;
+    display: none;
+  }
 </style>
 </head>
 <body>
-<div id="game-container">
-  <h1>Nepal Trivia Game</h1>
-  <div id="question" class="question"></div>
-  <ul id="choices" class="choices"></ul>
-  <button id="next" style="display:none;">Next Question</button>
-  <div id="score"></div>
-</div>
+<canvas id="game" width="400" height="600"></canvas>
+<div id="score">0</div>
+<div id="gameOver">Game Over<br><button onclick="startGame()">Restart</button></div>
 <script>
-const questions = [
-  { q: 'What is the capital of Nepal?',
-    choices: ['Kathmandu', 'Pokhara', 'Lalitpur', 'Biratnagar'],
-    answer: 0 },
-  { q: 'Which mountain is the highest in Nepal?',
-    choices: ['Mt. Annapurna', 'Mt. Everest', 'Mt. Dhaulagiri', 'Mt. Machhapuchhre'],
-    answer: 1 },
-  { q: 'What is the national language of Nepal?',
-    choices: ['Hindi', 'Tibetan', 'Nepali', 'Maithili'],
-    answer: 2 },
-  { q: 'Which year did Nepal become a republic?',
-    choices: ['2001', '2008', '2015', '1990'],
-    answer: 1 },
-];
-let current = 0;
-let score = 0;
-const questionEl = document.getElementById('question');
-const choicesEl = document.getElementById('choices');
-const nextBtn = document.getElementById('next');
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
-function loadQuestion() {
-  nextBtn.style.display = 'none';
-  const q = questions[current];
-  questionEl.textContent = q.q;
-  choicesEl.innerHTML = '';
-  q.choices.forEach((choice, index) => {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.textContent = choice;
-    btn.onclick = () => selectAnswer(index);
-    li.appendChild(btn);
-    choicesEl.appendChild(li);
+const gameOverEl = document.getElementById('gameOver');
+
+let bird, pipes, score, animationId, gameRunning;
+
+function startGame() {
+  bird = { x: 60, y: canvas.height / 2, radius: 12, velocity: 0 };
+  pipes = [];
+  score = 0;
+  gameRunning = true;
+  gameOverEl.style.display = 'none';
+  scoreEl.textContent = '0';
+  if (animationId) cancelAnimationFrame(animationId);
+  spawnPipe();
+  loop();
+}
+
+function spawnPipe() {
+  const gap = 140;
+  const topHeight = Math.floor(Math.random() * (canvas.height - gap - 100)) + 50;
+  pipes.push({ x: canvas.width, top: topHeight, bottom: topHeight + gap });
+}
+
+function drawBackground() {
+  ctx.fillStyle = '#87CEEB';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // simple mountains
+  ctx.fillStyle = '#999';
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height);
+  ctx.lineTo(100, 450);
+  ctx.lineTo(200, canvas.height);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(150, canvas.height);
+  ctx.lineTo(280, 420);
+  ctx.lineTo(400, canvas.height);
+  ctx.fill();
+}
+
+function drawBird() {
+  ctx.fillStyle = '#FF0';
+  ctx.beginPath();
+  ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#F90';
+  ctx.beginPath();
+  ctx.moveTo(bird.x + bird.radius, bird.y);
+  ctx.lineTo(bird.x + bird.radius + 8, bird.y - 4);
+  ctx.lineTo(bird.x + bird.radius + 8, bird.y + 4);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawPipes() {
+  ctx.fillStyle = '#8B4513';
+  pipes.forEach(pipe => {
+    ctx.fillRect(pipe.x, 0, 50, pipe.top);
+    ctx.fillRect(pipe.x, pipe.bottom, 50, canvas.height - pipe.bottom);
   });
 }
-function selectAnswer(index) {
-  const q = questions[current];
-  if (index === q.answer) {
+
+function update() {
+  bird.velocity += 0.5;
+  bird.y += bird.velocity;
+
+  if (bird.y + bird.radius > canvas.height || bird.y - bird.radius < 0) {
+    endGame();
+  }
+
+  pipes.forEach(pipe => {
+    pipe.x -= 2;
+  });
+
+  if (pipes.length && pipes[0].x + 50 < 0) {
+    pipes.shift();
     score++;
-    alert('Correct!');
-  } else {
-    alert('Wrong!');
+    scoreEl.textContent = score;
   }
-  nextBtn.style.display = 'block';
-}
-nextBtn.onclick = () => {
-  current++;
-  if (current < questions.length) {
-    loadQuestion();
-  } else {
-    showScore();
+
+  if (pipes.length && pipes[pipes.length - 1].x < canvas.width - 200) {
+    spawnPipe();
   }
-};
-function showScore() {
-  questionEl.style.display = 'none';
-  choicesEl.style.display = 'none';
-  nextBtn.style.display = 'none';
-  scoreEl.textContent = `You scored ${score} out of ${questions.length}!`;
+
+  pipes.forEach(pipe => {
+    if (
+      bird.x + bird.radius > pipe.x &&
+      bird.x - bird.radius < pipe.x + 50 &&
+      (bird.y - bird.radius < pipe.top || bird.y + bird.radius > pipe.bottom)
+    ) {
+      endGame();
+    }
+  });
 }
-loadQuestion();
+
+function loop() {
+  drawBackground();
+  drawPipes();
+  drawBird();
+  update();
+  if (gameRunning) {
+    animationId = requestAnimationFrame(loop);
+  }
+}
+
+function flap() {
+  if (!gameRunning) return;
+  bird.velocity = -8;
+}
+
+function endGame() {
+  gameRunning = false;
+  gameOverEl.style.display = 'block';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') flap();
+});
+canvas.addEventListener('mousedown', flap);
+
+startGame();
 </script>
 </body>
 </html>
