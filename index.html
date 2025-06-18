@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nepal Trivia Game</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px; }
+  #game-container { background: white; padding: 20px; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  .question { font-size: 1.2em; margin-bottom: 15px; }
+  .choices { list-style: none; padding: 0; }
+  .choices li { margin: 8px 0; }
+  button { padding: 10px 15px; font-size: 1em; }
+  #score { font-weight: bold; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <h1>Nepal Trivia Game</h1>
+  <div id="question" class="question"></div>
+  <ul id="choices" class="choices"></ul>
+  <button id="next" style="display:none;">Next Question</button>
+  <div id="score"></div>
+</div>
+<script>
+const questions = [
+  { q: 'What is the capital of Nepal?',
+    choices: ['Kathmandu', 'Pokhara', 'Lalitpur', 'Biratnagar'],
+    answer: 0 },
+  { q: 'Which mountain is the highest in Nepal?',
+    choices: ['Mt. Annapurna', 'Mt. Everest', 'Mt. Dhaulagiri', 'Mt. Machhapuchhre'],
+    answer: 1 },
+  { q: 'What is the national language of Nepal?',
+    choices: ['Hindi', 'Tibetan', 'Nepali', 'Maithili'],
+    answer: 2 },
+  { q: 'Which year did Nepal become a republic?',
+    choices: ['2001', '2008', '2015', '1990'],
+    answer: 1 },
+];
+let current = 0;
+let score = 0;
+const questionEl = document.getElementById('question');
+const choicesEl = document.getElementById('choices');
+const nextBtn = document.getElementById('next');
+const scoreEl = document.getElementById('score');
+function loadQuestion() {
+  nextBtn.style.display = 'none';
+  const q = questions[current];
+  questionEl.textContent = q.q;
+  choicesEl.innerHTML = '';
+  q.choices.forEach((choice, index) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.textContent = choice;
+    btn.onclick = () => selectAnswer(index);
+    li.appendChild(btn);
+    choicesEl.appendChild(li);
+  });
+}
+function selectAnswer(index) {
+  const q = questions[current];
+  if (index === q.answer) {
+    score++;
+    alert('Correct!');
+  } else {
+    alert('Wrong!');
+  }
+  nextBtn.style.display = 'block';
+}
+nextBtn.onclick = () => {
+  current++;
+  if (current < questions.length) {
+    loadQuestion();
+  } else {
+    showScore();
+  }
+};
+function showScore() {
+  questionEl.style.display = 'none';
+  choicesEl.style.display = 'none';
+  nextBtn.style.display = 'none';
+  scoreEl.textContent = `You scored ${score} out of ${questions.length}!`;
+}
+loadQuestion();
+</script>
+</body>
+</html>
